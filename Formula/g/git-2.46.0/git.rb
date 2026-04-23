@@ -1,9 +1,8 @@
 class Git < Formula
   desc "Distributed revision control system"
   homepage "https://git-scm.com"
-  # Don't forget to update the documentation resources along with the url!
-  url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.42.0.tar.xz"
-  sha256 "3278210e9fd2994b8484dd7e3ddd9ea8b940ef52170cdb606daa94d887c93b0d"
+  url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.46.0.tar.xz"
+  sha256 "7f123462a28b7ca3ebe2607485f7168554c2b10dfc155c7ec46300666ac27f95"
   license "GPL-2.0-only"
   head "https://github.com/git/git.git", branch: "master"
 
@@ -13,14 +12,14 @@ class Git < Formula
   end
 
   bottle do
-    rebuild 1
-    sha256 arm64_ventura:  "4bea6de3334de088b716f05aef9a95d185af6ed1237aebc97be1824b1d223584"
-    sha256 arm64_monterey: "8ff4e3a966efd6dea5544633195122994a942027722878949ca06b263f5827e2"
-    sha256 arm64_big_sur:  "03c655c2028b4a0c3cd188c80ab0efb04f9b97d7833d0bb4eadd2e31bd20bd47"
-    sha256 ventura:        "b2660c95dac23a5c7fdef545399b5eff987cc78755a29e7a8fe87afef35f177c"
-    sha256 monterey:       "36cb8b459b3ac11131ec58b663d6dc7209b0ea2e3b26de16fe7486308b4148e0"
-    sha256 big_sur:        "7c446d04c50a6473bd6d0859b5a4601245363b69baffb757ef7d8ea85788e3ae"
-    sha256 x86_64_linux:   "03b0f32b3507b1f9bef265af06ee501905c9087c831f4405e9474f9cf18b7a4b"
+    sha256 arm64_sequoia:  "568a71adcd3d448d34654db27f1e5ba631a5805ef8ad7b952dc4014e4dbb12dc"
+    sha256 arm64_sonoma:   "5c7ecbe7bcaf95fa6ef3766d97045754d9f56c9aa86935a6f0150a23f4aab068"
+    sha256 arm64_ventura:  "ac1be4aa1f685950a350862642188e6e5070d54e4e177d966e2e37aa129f8180"
+    sha256 arm64_monterey: "5feb852cc15aa4ca597588a9983053b62c1574dda11427fad406b71bd1400f0f"
+    sha256 sonoma:         "36bf410d7c148714230fc2679e4913351756a31f7f647a5095036e4a43d50b25"
+    sha256 ventura:        "967526b438eda92001575ad97e6e3fb5c18992b66e6b015629ff256b57bd523d"
+    sha256 monterey:       "e30ed725acb314c409b7e82f0b725d445909504f16fd6045c135819f43f3e817"
+    sha256 x86_64_linux:   "d2a6fded265ac04d96dcb79d852068cffe24c22126cf25f7839850a9cb5d60d9"
   end
 
   depends_on "gettext"
@@ -36,13 +35,13 @@ class Git < Formula
   end
 
   resource "html" do
-    url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-htmldocs-2.42.0.tar.xz"
-    sha256 "c027ad23614d19685677899527360985ec9186e97528084dc4f8d611f6c3483f"
+    url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-htmldocs-2.46.0.tar.xz"
+    sha256 "175d756b9d5eda6656c8067c7f8f80f15bd0cd9f908c3c4995ee6fe8a4182104"
   end
 
   resource "man" do
-    url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-manpages-2.42.0.tar.xz"
-    sha256 "03e0dc60a077ad31b10119e6619af8b50e652bd5c8a95c891523d73af1e573b9"
+    url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-manpages-2.46.0.tar.xz"
+    sha256 "dc118b1d4036e58d5cc4f4e804d903e1e137dac3e9826a246a7e517afd877bd3"
   end
 
   resource "Net::SMTP::SSL" do
@@ -51,6 +50,9 @@ class Git < Formula
   end
 
   def install
+    odie "html resource needs to be updated" if build.stable? && version != resource("html").version
+    odie "man resource needs to be updated" if build.stable? && version != resource("man").version
+
     # If these things are installed, tell Git build system not to use them
     ENV["NO_FINK"] = "1"
     ENV["NO_DARWIN_PORTS"] = "1"
@@ -159,7 +161,8 @@ class Git < Formula
     # purged by Homebrew's post-install cleaner because that doesn't check
     # "Library" directories. It is however pointless to keep around as it
     # only contains the perllocal.pod installation file.
-    rm_rf prefix/"Library/Perl"
+    perl_dir = prefix/"Library/Perl"
+    rm_r perl_dir if perl_dir.exist?
 
     # Set the macOS keychain credential helper by default
     # (as Apple's CLT's git also does this).
@@ -180,9 +183,6 @@ class Git < Formula
   end
 
   test do
-    assert_equal version, resource("html").version, "`html` resource needs updating!"
-    assert_equal version, resource("man").version, "`man` resource needs updating!"
-
     system bin/"git", "init"
     %w[haunted house].each { |f| touch testpath/f }
     system bin/"git", "add", "haunted", "house"
